@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b2945">
+<title>Commercial Roofing Manager</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17212b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#0b2945;color:white;padding:14px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
+h1,h2,h3{margin:0 0 6px}.small{font-size:12px;color:#6b7682}.whiteSmall{font-size:12px;color:#c8d5e1}
+main{max-width:1100px;margin:auto;padding:14px 14px 90px}.card{background:white;border:1px solid #d9e0e6;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0000000a}
+.grid{display:grid;gap:12px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+button,input,select,textarea{font:inherit}button{border:1px solid #c9d2da;background:white;border-radius:9px;padding:9px 12px;cursor:pointer}button.primary{background:#1769aa;color:white;border-color:#1769aa}
+input,select,textarea{width:100%;border:1px solid #cbd4dc;border-radius:9px;padding:9px;background:white}label{font-size:12px;font-weight:700;display:block;margin:8px 0 4px}
+.kpi{font-size:25px;font-weight:800}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.progress{height:9px;background:#e8edf1;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:#16834a}.pill{font-size:11px;padding:4px 8px;border-radius:99px;background:#eef2f5}
+nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #d9e0e6;display:flex;justify-content:center;gap:4px;padding:7px;z-index:10}nav button{flex:1;max-width:180px;border:0}.active{background:#e8f1f9!important;color:#1769aa;font-weight:700}
+.hidden{display:none!important}.note{background:#fff8df;border:1px solid #eedb98;border-radius:10px;padding:10px;font-size:13px}
+#map{width:100%;height:430px;border-radius:12px;background:#d9e2e8;position:relative;overflow:hidden;border:1px solid #c9d2da}
+#map img{width:100%;height:100%;object-fit:cover;display:block}
+.mapOverlay{position:absolute;inset:0}.area{position:absolute;background:#16834a55;border:2px solid #16834a;display:flex;align-items:center;justify-content:center;color:#06351e;font-weight:800;user-select:none}
+.detail{position:absolute;width:34px;height:34px;border-radius:50%;background:white;border:3px solid #1769aa;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;box-shadow:0 2px 6px #0003}
+.legend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.legend button{text-align:left}
+@media(max-width:700px){.two,.three{grid-template-columns:1fr}.legend{grid-template-columns:repeat(2,minmax(0,1fr))}#map{height:330px}}
+</style>
+</head>
+<body>
+<header><div><b>Commercial Roofing Manager</b><div class="whiteSmall">Working MVP • 1 square = 100 SF</div></div><div id="saved" class="whiteSmall">Ready</div></header>
+<main>
+<section id="dash"></section><section id="projects" class="hidden"></section><section id="project" class="hidden"></section><section id="crew" class="hidden"></section>
+</main>
+<nav><button data-p="dash">Dashboard</button><button data-p="projects">Projects</button><button data-p="crew">Crew</button></nav>
+<script>
+const KEY="crm_working_mvp_v2";
+let S=JSON.parse(localStorage.getItem(KEY)||"null")||{projects:[],crew:[],selected:null};
+const $=id=>document.getElementById(id), save=()=>{localStorage.setItem(KEY,JSON.stringify(S));$("saved").textContent="Saved "+new Date().toLocaleTimeString();};
+const id=()=>Math.random().toString(36).slice(2,9), esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function sq(sf){return (+sf||0)/100}
+function st(p){let total=p.tasks.reduce((a,x)=>a+(+x.qty||0),0),done=p.tasks.reduce((a,x)=>a+(+x.done||0),0),pct=total?done/total*100:0;
+let actual=p.costs.reduce((a,x)=>a+(+x.amount||0),0),rem=p.tasks.reduce((a,x)=>a+Math.max(0,(+x.qty||0)-(+x.done||0))*(+x.cost||0),0),profit=(+p.contract||0)-actual-rem;
+let rates=p.tasks.map(t=>{let r=+t.rate||0;let cr=S.crew.filter(c=>p.crew.includes(c.id)).map(c=>(c.rates||{})[t.type]).filter(Boolean);if(cr.length)r=cr.reduce((a,b)=>a+b,0)/cr.length;return r?Math.max(0,(+t.qty||0)-(+t.done||0))/r:0});
+let days=rates.length?Math.max(...rates):0;let finish=new Date();finish.setDate(finish.getDate()+Math.ceil(days));return {total,done,pct,actual,rem,profit,days,finish}}
+function nav(p){document.querySelectorAll("main>section").forEach(x=>x.classList.add("hidden"));$(p).classList.remove("hidden");document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.p===p));render(p)}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>nav(b.dataset.p));
+function render(p){if(p==="dash")dash();if(p==="projects")projects();if(p==="project")project();if(p==="crew")crew()}
+function dash(){let a=S.projects.filter(p=>p.status!=="Completed"),contract=a.reduce((x,p)=>x+(+p.contract||0),0),profit=a.reduce((x,p)=>x+st(p).profit,0);
+$("dash").innerHTML=`<div class="between"><div><h2>Dashboard</h2><div class="small">Commercial single-ply & built-up roofing</div></div><button class="primary" onclick="newProject()">+ New Project</button></div>
+<div class="grid three"><div class="card"><div class="small">Active projects</div><div class="kpi">${a.length}</div></div><div class="card"><div class="small">Contract value</div><div class="kpi">$${contract.toLocaleString()}</div></div><div class="card"><div class="small">Projected profit</div><div class="kpi">$${Math.round(profit).toLocaleString()}</div></div></div>
+<div class="card"><h3>Active projects</h3>${a.length?a.map(p=>{let x=st(p);return `<div class="card"><div class="between"><div><b>${esc(p.name)}</b><div class="small">${esc(p.system)} • ${esc(p.address)}</div></div><button onclick="openProject('${p.id}')">Open</button></div><div class="between"><span>${x.pct.toFixed(0)}% complete</span><span>Forecast ${x.finish.toLocaleDateString()}</span></div><div class="progress"><i style="width:${x.pct}%"></i></div><div class="small" style="margin-top:6px">${x.done.toFixed(1)} / ${x.total.toFixed(1)} squares</div></div>`}).join(""):"<div class='small'>Create a project to begin.</div>"}</div>`}
+function projects(){$("projects").innerHTML=`<div class="between"><div><h2>Projects</h2><div class="small">Jobs, quantities, costs and forecasts</div></div><button class="primary" onclick="newProject()">+ New Project</button></div><div class="grid">${S.projects.map(p=>{let x=st(p);return `<div class="card"><div class="between"><div><h3>${esc(p.name)}</h3><div class="small">${esc(p.number)} • ${esc(p.system)}</div></div><button onclick="openProject('${p.id}')">Open</button></div><p class="small">${esc(p.address)}</p><b>${x.pct.toFixed(1)}%</b> complete • <b>${x.total.toFixed(1)} squares</b> total • <b>$${Math.round(x.profit).toLocaleString()}</b> projected profit</div>`}).join("")}</div>`}
+function newProject(){let p={id:id(),name:"New Commercial Project",number:"",address:"",system:"TPO",contract:0,status:"In Progress",crew:[],tasks:[],costs:[],details:[],map:"",snapshots:[]};S.projects.push(p);S.selected=p.id;save();nav("project")}
+function openProject(x){S.selected=x;nav("project")}
+function project(){let p=S.projects.find(x=>x.id===S.selected);if(!p)return nav("projects");let x=st(p);
+$("project").innerHTML=`<div class="between"><div><h2>${esc(p.name)}</h2><div class="small">${esc(p.system)} • ${esc(p.address)}</div></div><button onclick="nav('projects')">Back</button></div>
+<div class="grid three"><div class="card"><div class="small">Progress</div><div class="kpi">${x.pct.toFixed(0)}%</div><div>${x.done.toFixed(1)} / ${x.total.toFixed(1)} squares</div></div><div class="card"><div class="small">Forecast completion</div><div class="kpi">${x.finish.toLocaleDateString()}</div><div>${x.days.toFixed(1)} production days remaining</div></div><div class="card"><div class="small">Projected profit</div><div class="kpi">$${Math.round(x.profit).toLocaleString()}</div><div>${p.contract?((x.profit/p.contract)*100).toFixed(1):0}% margin</div></div></div>
+<div class="card"><h3>Project information</h3><div class="grid two"><div><label>Project name</label><input id="pn" value="${esc(p.name)}"><label>Project number</label><input id="pnum" value="${esc(p.number)}"><label>Address</label><input id="pa" value="${esc(p.address)}"></div><div><label>Roof system</label><select id="ps">${["TPO","PVC","EPDM","Modified Bitumen","BUR","Other"].map(v=>`<option ${v===p.system?"selected":""}>${v}</option>`).join("")}</select><label>Contract value</label><input id="pc" type="number" value="${p.contract}"></div></div><button class="primary" style="margin-top:10px" onclick="saveInfo()">Save project</button></div>
+<div class="card"><div class="between"><div><h3>Interactive overhead</h3><div class="small">Upload an aerial, then mark completed areas or place roofing details.</div></div><input type="file" accept="image/*" onchange="uploadMap(event)" style="max-width:250px"></div>
+<div class="note">Roofing-area quantities are stored and displayed in <b>squares</b>. 1 square = 100 SF. Linear details use LF; individual details use EA.</div>
+<div id="map">${p.map?`<img src="${p.map}">`:"<div style='height:100%;display:flex;align-items:center;justify-content:center;color:#66717d'>Upload an overhead image to begin</div>"}<div class="mapOverlay" id="overlay"></div></div>
+<div class="row" style="margin-top:8px"><button onclick="measureArea()">Measure roof area</button><button onclick="markArea()">Mark completed area</button><button onclick="dailySnapshot()">Save daily snapshot</button><button onclick="addDetail('Roof Drain')">+ Roof Drain</button><button onclick="addDetail('Scupper')">+ Scupper</button><button onclick="addDetail('HVAC Curb')">+ HVAC Curb</button><button onclick="addDetail('Pipe Penetration')">+ Pipe Penetration</button><button onclick="addDetail('Expansion Joint')">+ Expansion Joint</button></div>
+<div class="small" style="margin-top:8px">${p.details.length} map items • saved locally on this device • <b>Roof area = squares</b></div><div id="snapshotList" class="small" style="margin-top:6px"></div></div>
+<div class="grid two"><div class="card"><div class="between"><h3>Work activities</h3><button onclick="addTask()">+ Add</button></div>${p.tasks.map((t,i)=>`<div class="card"><b>${esc(t.name)}</b><div class="grid two"><div><label>Quantity (${esc(t.unit)})</label><input id="q${i}" type="number" value="${t.qty}"><label>Completed</label><input id="d${i}" type="number" value="${t.done}"></div><div><label>Production/day</label><input id="r${i}" type="number" value="${t.rate}"><label>Remaining cost/unit</label><input id="c${i}" type="number" value="${t.cost}"></div></div><button onclick="saveTask(${i})">Save</button> <button onclick="delTask(${i})">Delete</button></div>`).join("")||"<div class='small'>Examples: membrane squares, insulation squares, flashing LF, drains EA.</div>"}</div>
+<div class="card"><div class="between"><h3>Actual costs</h3><button onclick="addCost()">+ Add</button></div>${p.costs.map((c,i)=>`<div class="row"><input id="cn${i}" value="${esc(c.name)}"><input id="ca${i}" type="number" value="${c.amount}"><button onclick="delCost(${i})">×</button></div>`).join("")}<hr><div class="between"><span>Actual</span><b>$${x.actual.toLocaleString()}</b></div><div class="between"><span>Remaining forecast</span><b>$${Math.round(x.rem).toLocaleString()}</b></div><div class="between"><span>Projected final profit</span><b>$${Math.round(x.profit).toLocaleString()}</b></div></div></div>
+<div class="card"><h3>Crew assignment</h3><div class="grid three">${S.crew.map(c=>`<label><input type="checkbox" ${p.crew.includes(c.id)?"checked":""} onchange="toggleCrew('${c.id}',this.checked)"> ${esc(c.name)}<div class="small">${esc(c.role)} • ${Object.keys(c.rates||{}).length} rates</div></label>`).join("")||"<div class='small'>Add employees in Crew.</div>"}</div></div>`;drawDetails()}
+function saveInfo(){let p=S.projects.find(x=>x.id===S.selected);p.name=$("pn").value;p.number=$("pnum").value;p.address=$("pa").value;p.system=$("ps").value;p.contract=+$("pc").value;save();project()}
+function uploadMap(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{S.projects.find(x=>x.id===S.selected).map=r.result;save();project()};r.readAsDataURL(f)}
+function mapClick(fn){$("map").onclick=fn}
+function markArea(){let p=S.projects.find(x=>x.id===S.selected);let area=prompt("Enter completed roof area in squares (e.g. 12.5):");if(!area)return;p.details.push({type:"Completed Area",qty:+area,date:new Date().toISOString(),x:10+Math.random()*70,y:10+Math.random()*70,w:15,h:15});save();project()}
+
+function measureArea(){
+  const p=S.projects.find(x=>x.id===S.selected);
+  const sf=prompt("Enter measured roof area in square feet:");
+  if(sf===null||!sf)return;
+  const squares=(+sf/100);
+  p.details.push({type:"Measured Roof Area",sf:+sf,squares,unit:"squares",date:new Date().toISOString(),x:8+Math.random()*70,y:8+Math.random()*70,w:20,h:12});
+  save(); project();
+}
+function dailySnapshot(){
+  const p=S.projects.find(x=>x.id===S.selected), x=st(p);
+  p.snapshots=p.snapshots||[];
+  p.snapshots.push({date:new Date().toISOString(),completedSquares:x.done,totalSquares:x.total,percent:x.pct,forecast:x.finish.toISOString()});
+  save(); project();
+  alert("Daily snapshot saved.");
+}
+function addDetail(type){let p=S.projects.find(x=>x.id===S.selected);let q=prompt(type+" quantity (EA or LF as appropriate):","1");if(q===null)return;p.details.push({type,qty:+q||1,date:new Date().toISOString(),x:10+Math.random()*80,y:10+Math.random()*75});save();project()}
+function drawDetails(){let p=S.projects.find(x=>x.id===S.selected),o=$("overlay");if(!o)return;o.innerHTML=p.details.map(d=>d.type==="Completed Area"?`<div class="area" style="left:${d.x}%;top:${d.y}%;width:${d.w}%;height:${d.w*0.6}%">${d.qty} sq</div>`:d.type==="Measured Roof Area"?`<div class="area" style="left:${d.x}%;top:${d.y}%;width:${d.w}%;height:${d.h}%">${(+d.squares).toFixed(1)} squares</div>`:`<div class="detail" title="${esc(d.type)} • ${d.qty}" style="left:${d.x}%;top:${d.y}%">${d.type.split(" ").map(w=>w[0]).join("").slice(0,3)}</div>`).join("");let sl=$("snapshotList");if(sl)sl.innerHTML=(p.snapshots||[]).slice(-5).reverse().map(s=>`Snapshot ${new Date(s.date).toLocaleDateString()}: ${(+s.completedSquares).toFixed(1)} / ${(+s.totalSquares).toFixed(1)} squares (${(+s.percent).toFixed(0)}%) • forecast ${new Date(s.forecast).toLocaleDateString()}`).join("<br>")}
+function addTask(){let p=S.projects.find(x=>x.id===S.selected);p.tasks.push({name:"TPO Membrane",type:"TPO Membrane",qty:0,done:0,unit:"squares",rate:8,cost:0});save();project()}
+function saveTask(i){let p=S.projects.find(x=>x.id===S.selected),t=p.tasks[i];t.qty=+$("q"+i).value;t.done=+$("d"+i).value;t.rate=+$("r"+i).value;t.cost=+$("c"+i).value;save();project()}
+function delTask(i){S.projects.find(x=>x.id===S.selected).tasks.splice(i,1);save();project()}
+function addCost(){S.projects.find(x=>x.id===S.selected).costs.push({name:"Material",amount:0});save();project()}
+function delCost(i){S.projects.find(x=>x.id===S.selected).costs.splice(i,1);save();project()}
+function toggleCrew(cid,on){let p=S.projects.find(x=>x.id===S.selected);p.crew=p.crew.filter(x=>x!==cid);if(on)p.crew.push(cid);save();project()}
+function crew(){ $("crew").innerHTML=`<div class="between"><div><h2>Crew & Employees</h2><div class="small">Skills and learned production rates</div></div><button class="primary" onclick="newCrew()">+ Employee</button></div><div class="grid">${S.crew.map(c=>`<div class="card"><h3>${esc(c.name)}</h3><div class="grid two"><div><label>Name</label><input id="n${c.id}" value="${esc(c.name)}"><label>Role</label><input id="r${c.id}" value="${esc(c.role)}"></div><div><label>Skills</label><input id="s${c.id}" value="${esc((c.skills||[]).join(", "))}"><label>Production rates</label><input id="p${c.id}" value="${esc(Object.entries(c.rates||{}).map(([k,v])=>k+"="+v).join(", "))}"></div></div><button onclick="saveCrew('${c.id}')">Save employee</button></div>`).join("")||"<div class='card small'>No employees yet.</div>"}</div>`}
+function newCrew(){S.crew.push({id:id(),name:"New Employee",role:"Roofer",skills:[],rates:{}});save();crew()}
+function saveCrew(cid){let c=S.crew.find(x=>x.id===cid);c.name=$("n"+cid).value;c.role=$("r"+cid).value;c.skills=$("s"+cid).value.split(",").map(x=>x.trim()).filter(Boolean);c.rates={};$("p"+cid).value.split(",").forEach(v=>{let [k,n]=v.split("=");if(k&&+n)c.rates[k.trim()]=+n});save();crew()}
+nav("dash");
+</script>
+</body>
+</html>
