@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b2945"><title>Commercial Roofing Manager — V4.2</title>
+<meta name="theme-color" content="#0b2945"><title>Commercial Roofing Manager — V4.3</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17212b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#0b2945;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
@@ -18,7 +18,7 @@ nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid 
 .op{background:#f7fafc;border:1px solid #dce4ea;border-radius:10px;padding:10px;margin-top:8px}.skillGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.skillGrid label{font-weight:500;margin:0}.skillGrid input{width:auto}.badge{display:inline-block;padding:3px 7px;border-radius:99px;background:#e8f1f9;color:#1769aa;font-size:11px;margin:2px}
 @media(max-width:700px){.two,.three{grid-template-columns:1fr}.skillGrid{grid-template-columns:1fr}#map{height:320px}}
 </style></head><body>
-<header><div><b>Commercial Roofing Manager</b><div class="whiteSmall">V4.2 • GitHub Pages • Roofing squares are primary</div></div><div id="saved" class="whiteSmall">Ready</div></header>
+<header><div><b>Commercial Roofing Manager</b><div class="whiteSmall">V4.3 • GitHub Pages • Roofing squares are primary</div></div><div id="saved" class="whiteSmall">Ready</div></header>
 <main><section id="dash"></section><section id="projects" class="hidden"></section><section id="project" class="hidden"></section><section id="crew" class="hidden"></section></main>
 <nav><button data-p="dash">Dashboard</button><button data-p="projects">Projects</button><button data-p="crew">Crew</button></nav>
 <script>
@@ -85,4 +85,61 @@ function newCrew(){S.crew.push({id:id(),name:"New Employee",classification:"Jour
 function skill(cid,e){let c=S.crew.find(x=>x.id===cid);c.capabilities=c.capabilities||[];if(e.checked&&!c.capabilities.includes(e.nextSibling.textContent.trim()))c.capabilities.push(e.nextSibling.textContent.trim());if(!e.checked)c.capabilities=c.capabilities.filter(x=>x!==e.nextSibling.textContent.trim());save()}
 function saveCrew(cid){let c=S.crew.find(x=>x.id===cid);c.name=$("n"+cid).value;c.classification=$("cl"+cid).value;c.role=$("r"+cid).value;save();crew()}
 nav("dash");
-</script></body></html>
+</script>
+<style>
+.v43-map-shell{position:relative;border:1px solid #d6dce2;border-radius:14px;overflow:hidden;background:#eef2f5}
+.v43-map-canvas{position:relative;min-height:420px;background:#dfe7ec;touch-action:none}
+.v43-map-toolbar{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;z-index:10}
+.v43-map-toolbar button{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.v43-map-legend{position:absolute;right:12px;bottom:12px;z-index:10;max-width:290px;background:rgba(255,255,255,.94);border-radius:12px;padding:12px;box-shadow:0 4px 16px rgba(0,0,0,.16)}
+.v43-map-status{position:absolute;left:12px;bottom:12px;z-index:10;background:rgba(255,255,255,.94);padding:9px 12px;border-radius:10px}
+.v43-map-fullscreen{position:fixed!important;inset:0!important;z-index:99999!important;border-radius:0!important;background:#111}
+.v43-map-fullscreen .v43-map-canvas{height:100vh;min-height:100vh}
+.v43-map-fullscreen .v43-map-legend{bottom:70px}
+.v43-day-strip{display:flex;gap:7px;overflow-x:auto;padding:5px 0}
+</style>
+<script>
+(function(){
+  function cur(){try{return typeof current==="function"?current():null}catch(e){return null}}
+  function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+  window.v43EnsureData=function(p){
+    if(!p)return;
+    p.roofSections=p.roofSections||[];
+    p.mapObjects=p.mapObjects||[];
+    p.dailyEntries=p.dailyEntries||[];
+    p.mapView=p.mapView||{zoom:1};
+    p.roofSections.forEach((s,i)=>{
+      s.label=s.label||("Section "+String.fromCharCode(65+i));
+      s.squares=+(s.squares||s.qty||0);
+      s.projectType=s.projectType||"";
+      s.status=s.status||"Not Started";
+      s.completedSquares=+(s.completedSquares||0);
+      s.details=s.details||[];
+    });
+  };
+  window.v43AddRoofSection=function(){
+    const p=cur();if(!p)return;v43EnsureData(p);
+    p.roofSections.push({label:"Section "+String.fromCharCode(65+p.roofSections.length),squares:0,projectType:"",assembly:"",materials:"",status:"Not Started",completedSquares:0,details:[]});
+    if(typeof save==="function")save();if(typeof project==="function")project();
+  };
+  window.v43AddDailyEntry=function(){
+    const p=cur();if(!p)return;v43EnsureData(p);
+    p.dailyEntries.push({date:new Date().toISOString().slice(0,10),sectionId:"",squaresToday:0,detailHours:0,notes:"",incompleteReason:""});
+    if(typeof save==="function")save();if(typeof project==="function")project();
+  };
+  window.v43OpenFullMap=function(){const e=document.getElementById("v43MapShell");if(e){e.classList.add("v43-map-fullscreen");document.body.style.overflow="hidden"}};
+  window.v43CloseFullMap=function(){const e=document.getElementById("v43MapShell");if(e){e.classList.remove("v43-map-fullscreen");document.body.style.overflow=""}};
+  window.v43Zoom=function(d){const p=cur();if(!p)return;v43EnsureData(p);p.mapView.zoom=Math.max(.5,Math.min(3,(p.mapView.zoom||1)+d));if(typeof save==="function")save();if(typeof project==="function")project()};
+  window.v43FitProject=function(){const p=cur();if(!p)return;v43EnsureData(p);p.mapView.zoom=1;if(typeof save==="function")save();if(typeof project==="function")project()};
+  window.v43SelectDay=function(i){const p=cur();if(!p)return;v43EnsureData(p);p.selectedDay=i;if(typeof save==="function")save();if(typeof project==="function")project()};
+  window.V43MapCard=function(){
+    const p=cur();if(!p)return "";
+    v43EnsureData(p);
+    const total=p.roofSections.reduce((a,s)=>a+(+s.squares||0),0);
+    const done=p.roofSections.reduce((a,s)=>a+(+s.completedSquares||0),0);
+    return `<div class="card"><div class="between"><div><h3>Interactive Overhead</h3><div class="muted">Roof sections, daily production, and detail history.</div></div><div class="row"><button onclick="v43AddRoofSection()">+ Add Roof Section</button><button onclick="v43AddDailyEntry()">+ Daily Entry</button><button class="primary" onclick="v43OpenFullMap()">⛶ Full Screen Map</button></div></div><div class="v43-map-shell" id="v43MapShell" style="margin-top:12px"><div class="v43-map-canvas"><div class="v43-map-toolbar"><button onclick="v43CloseFullMap()">↩ Exit Full Screen</button><button onclick="v43FitProject()">Fit Project</button><button onclick="v43Zoom(-.2)">−</button><button onclick="v43Zoom(.2)">+</button></div><div class="v43-map-status"><b>${done.toFixed(1)} / ${total.toFixed(1)} squares</b> completed</div><div class="v43-map-legend"><b>Map Legend</b><div class="muted" style="margin-top:6px">Job details become available here for placement.</div></div></div></div><div style="margin-top:12px"><b>Daily History</b><div class="v43-day-strip">${(p.dailyEntries||[]).map((d,i)=>`<button onclick="v43SelectDay(${i})">${esc(d.date||"Date")}</button>`).join("")||'<span class="muted">No daily entries yet.</span>'}</div></div></div>`;
+  };
+})();
+</script>
+
+</body></html>
