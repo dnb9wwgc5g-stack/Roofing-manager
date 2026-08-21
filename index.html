@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17212b">
-<title>Commercial Roofing Manager V4.3.2</title>
+<title>Commercial Roofing Manager V4.3.3</title>
 <style>
 :root{--bg:#f4f6f8;--card:#fff;--ink:#17212b;--muted:#64717d;--line:#d9e0e6;--accent:#1769aa;--accent2:#0f4f7f;--good:#2d7a46;--warn:#a76a00;--bad:#a83c3c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -30,6 +30,8 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}input,se
 .skill{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:7px}.skill-top{display:grid;grid-template-columns:1fr 95px auto;gap:8px;align-items:center}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:14px;z-index:2000}.modal.show{display:flex}.modal-card{background:#fff;border-radius:14px;width:min(720px,100%);max-height:90vh;overflow:auto;padding:15px}
 .section-editor{position:absolute;inset:0;background:rgba(255,255,255,.96);z-index:30;padding:15px;display:none}.section-editor.show{display:block}
+.view-section{display:none}.view-section.active{display:block}.topnav{position:sticky;top:0;z-index:40;overflow-x:auto;white-space:nowrap}.topnav button.active{font-weight:800;border-color:var(--accent);box-shadow:0 0 0 2px rgba(23,105,170,.12)}
+.map-toolbar{transition:transform .2s ease,opacity .2s ease}.map-tools-toggle{position:absolute;right:10px;top:10px;z-index:20}.map-toolbar.collapsed{transform:translateY(-115%);opacity:.08;pointer-events:none}.map-section{touch-action:none}.map-handle{position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--accent);z-index:4;box-sizing:border-box}.map-handle.nw{left:-7px;top:-7px;cursor:nwse-resize}.map-handle.ne{right:-7px;top:-7px;cursor:nesw-resize}.map-handle.sw{left:-7px;bottom:-7px;cursor:nesw-resize}.map-handle.se{right:-7px;bottom:-7px;cursor:nwse-resize}.map-section .tag{pointer-events:none}
 .notice{padding:10px;border-radius:10px;background:#f1f6fa;border:1px solid #d5e3ec;font-size:13px}
 @media(max-width:650px){main{padding:9px}.card{padding:11px}.map-legend{max-height:36%;font-size:12px}.skill-top{grid-template-columns:1fr 85px auto}}
 
@@ -37,17 +39,23 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}input,se
 </style>
 </head>
 <body>
-<header><h1>Commercial Roofing Manager <span style="opacity:.7">V4.3.2</span></h1><div class="sub">Production-first commercial roofing management • Roofing squares = primary area unit • Recovery build</div></header>
+<header><h1>Commercial Roofing Manager <span style="opacity:.7">V4.3.3</span></h1><div class="sub">Production-first commercial roofing management • Roofing squares = primary area unit • Recovery build</div></header>
 <main>
   <nav class="topnav" aria-label="Application navigation">
-    <button onclick="scrollToId('dashboard')">Dashboard</button>
-    <button onclick="scrollToId('projectInfo')">Project</button>
-    <button onclick="scrollToId('roofing')">Roofing</button>
-    <button onclick="scrollToId('employeesSection')">Employees</button>
-    <button onclick="scrollToId('dailySection')">Daily</button>
+    <button data-tab="dashboard" onclick="showTab('dashboard')">Dashboard</button>
+    <button data-tab="projectInfo" onclick="showTab('projectInfo')">Project</button>
+    <button data-tab="roofing" onclick="showTab('roofing')">Roofing</button>
+    <button data-tab="roofSections" onclick="showTab('roofSections')">Roof Sections</button>
+    <button data-tab="assemblySection" onclick="showTab('assemblySection')">Roof Assembly</button>
+    <button data-tab="operationsSection" onclick="showTab('operationsSection')">Operations</button>
+    <button data-tab="detailsSection" onclick="showTab('detailsSection')">Details</button>
+    <button data-tab="employeesSection" onclick="showTab('employeesSection')">Employees</button>
+    <button data-tab="dailySection" onclick="showTab('dailySection')">Daily</button>
+    <button data-tab="forecastSection" onclick="showTab('forecastSection')">Forecast</button>
+    <button data-tab="financialSection" onclick="showTab('financialSection')">Financials</button>
   </nav>
-  <section id="dashboard" class="card dashboard-card"></section>
-  <section id="projectInfo" class="card">
+  <section id="dashboard" class="card dashboard-card view-section active"></section>
+  <section id="projectInfo" class="card view-section">
     <div class="between"><div><h2>Project</h2></div><div class="row"><button onclick="newProject()">New Project</button><button onclick="exportData()">Export</button><label style="margin:0"><input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)"><button onclick="document.getElementById('importFile').click()">Import</button></label></div></div>
     <div class="grid grid3" style="margin-top:10px">
       <div><label>Project Name</label><input id="projectName" oninput="setField('name',this.value)"></div>
@@ -58,20 +66,21 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}input,se
     </div>
   </section>
 
-  <section id="roofing" class="card">
+  <section id="roofing" class="card view-section">
     <div class="between"><div><h2>Roofing</h2></div><div class="row"><label class="fileButton">Choose Roof Drawing / Photo<input id="mapFile" type="file" accept="image/*" onchange="uploadMap(event)"></label><button onclick="removeMap()">Remove Image</button><button class="primary" onclick="toggleFullscreen()">⛶ Full Screen</button><button onclick="fitProject()">Fit Project</button></div></div>
     <div id="mapWrap">
       <div id="map">
         <img id="mapBg" class="map-bg" alt="Roof drawing or aerial overhead">
-        <div class="map-toolbar">
-          <button onclick="startAddSection()">＋ Roof Section</button>
+        <button class="map-tools-toggle" onclick="toggleMapTools()">☰ Tools / Legend</button>
+        <div class="map-toolbar" id="mapToolbar">
+          <button onclick="startAddSection()">＋ Draw Roof Section</button>
           <button onclick="startAddCompleted()">✓ Completed Area</button>
           <button onclick="openPlacementPicker('point')">＋ Detail</button>
           <button onclick="openPlacementPicker('line')">＋ Linear Detail</button>
           <button onclick="zoom(-.15)">−</button><button onclick="zoom(.15)">＋</button>
           <label style="width:160px;background:#fff;padding:7px;border-radius:9px;box-shadow:0 2px 8px rgba(0,0,0,.12)">Map Detail Size<input id="globalSize" type="range" min="8" max="42" value="20" oninput="state.project.globalDetailSize=+this.value;save();render()" style="padding:0"></label>
           <button onclick="toggleLegend()">Legend</button>
-          <button onclick="showDay(0)">All Days</button>
+          <button onclick="showDay('all')">All Days</button>
         </div>
         <div id="mapObjects"></div>
         <div class="map-status" id="mapStatus"></div>
@@ -81,41 +90,41 @@ label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}input,se
     <div class="notice" style="margin-top:9px">Map geometry and display size are independent from production quantities. Roof sections use manually entered roofing squares; linear details use LF and a separate line-thickness setting.</div>
   </section>
 
-  <section class="card">
+  <section id="roofSections" class="card view-section">
     <div class="between"><h2>Roof Sections</h2><button onclick="startAddSection()">＋ Add Roof Section</button></div>
     <div id="sectionsTable"></div>
   </section>
 
-  <section class="card">
+  <section id="assemblySection" class="card view-section">
     <div class="between"><div><h2>Roof Assembly</h2><div class="muted">Multiple layers, attachment methods, and combined installation operations.</div></div><button onclick="addAssemblyLayer()">＋ Add Layer</button></div>
     <div id="assemblyTable"></div>
   </section>
 
-  <section class="card">
+  <section id="operationsSection" class="card view-section">
     <div class="between"><div><h2>Operations</h2><div class="muted">Installation operations are separate from assembly layers.</div></div><button onclick="addOperation()">＋ Add Operation</button></div>
     <div id="operationsTable"></div>
   </section>
 
-  <section class="card">
+  <section id="detailsSection" class="card view-section">
     <div class="between"><div><h2>Details</h2><div class="muted">Details are forecast in man-hours. Quick-select detail types can become reusable legend keys.</div></div><button onclick="addDetail()">＋ Add Detail</button></div>
     <div id="detailsTable"></div>
   </section>
 
-  <section id="employeesSection" class="card">
+  <section id="employeesSection" class="card view-section">
     <div class="between"><div><h2>Employees</h2><div class="muted">Capabilities are multi-select. Each capability has its own 1.0–2.0 experience rating.</div></div><button onclick="addEmployee()">＋ Add Employee</button></div>
     <div id="employees"></div>
   </section>
 
-  <section id="dailySection" class="card">
+  <section id="dailySection" class="card view-section">
     <div class="between"><div><h2>Daily Production</h2><div class="muted">Daily records preserve historical production; corrections don't have to erase what happened.</div></div><button onclick="addDailyEntry()">＋ Daily Entry</button></div>
     <div id="daily"></div>
   </section>
 
-  <section class="card">
+  <section id="forecastSection" class="card view-section">
     <h2>Forecast</h2><div id="forecast" class="grid grid3"></div>
   </section>
 
-  <section class="card" style="margin-bottom:30px">
+  <section id="financialSection" class="card view-section" style="margin-bottom:30px">
     <h2>💰 Financials</h2><div class="muted">Financial information is intentionally placed at the bottom.</div>
     <div class="grid grid3" style="margin-top:10px">
       <div><label>Contract Value</label><input type="number" min="0" step=".01" data-money="contractValue"></div>
@@ -148,34 +157,40 @@ function money(n){return new Intl.NumberFormat("en-US",{style:"currency",currenc
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
 
 function startAddSection(existing=null){
- let s=existing||{id:uid(),label:"Section "+String.fromCharCode(65+state.sections.length),squares:0,projectType:state.project.projectType||"",assembly:"",materials:"",status:"Not Started",completedSquares:0,shape:{x:10,y:10,w:30,h:20}};
- openModal(existing?"Edit Roof Section":"Add Roof Section",`<div class="grid grid2">
- <div><label>Section Label</label><input id="mLabel" value="${esc(s.label)}"></div>
- <div><label>Roofing Squares</label><input id="mSquares" type="number" step=".1" value="${s.squares}"></div>
- <div><label>Project Type</label><select id="mType">${["","New Construction","Tear-Off / Replacement","Recover","Custom"].map(x=>`<option ${x==s.projectType?"selected":""}>${x}</option>`).join("")}</select></div>
- <div><label>Assembly</label><input id="mAssembly" value="${esc(s.assembly)}" placeholder="e.g. Fleece-Back TPO"></div>
- <div><label>Materials</label><input id="mMaterials" value="${esc(s.materials)}"></div>
- <div><label>Status</label><select id="mStatus">${["Not Started","In Progress","Complete","On Hold"].map(x=>`<option ${x==s.status?"selected":""}>${x}</option>`).join("")}</select></div>
- </div><div class="notice" style="margin-top:10px">After saving, use <b>Edit Shape</b> on the map to crop/reshape the section. Geometry does not automatically alter the manually entered roofing-square quantity.</div>
- <div class="row" style="margin-top:12px"><button class="primary" onclick="saveSection('${s.id}')">Save</button>${existing?`<button class="danger" onclick="deleteSection('${s.id}')">Delete</button>`:""}<button onclick="closeModal()">Cancel</button></div>`);
- window._editingSection=s;
+ if(existing){
+   let s=existing;
+   openModal("Edit Roof Section",`<div class="grid grid2">
+   <div><label>Section Label</label><input id="mLabel" value="${esc(s.label)}"></div>
+   <div><label>Roofing Squares</label><input id="mSquares" type="number" step=".1" value="${s.squares}"></div>
+   <div><label>Project Type</label><select id="mType">${["","New Construction","Tear-Off / Replacement","Recover","Custom"].map(x=>`<option ${x==s.projectType?"selected":""}>${x}</option>`).join("")}</select></div>
+   <div><label>Assembly</label><input id="mAssembly" value="${esc(s.assembly)}" placeholder="e.g. Fleece-Back TPO"></div>
+   <div><label>Materials</label><input id="mMaterials" value="${esc(s.materials)}"></div>
+   <div><label>Status</label><select id="mStatus">${["Not Started","In Progress","Complete","On Hold"].map(x=>`<option ${x==s.status?"selected":""}>${x}</option>`).join("")}</select></div>
+   </div><div class="notice" style="margin-top:10px">Move and reshape this section directly on the map. The manually entered roofing-square quantity remains independent of display geometry.</div>
+   <div class="row" style="margin-top:12px"><button class="primary" onclick="saveSection('${s.id}')">Save</button><button class="danger" onclick="deleteSection('${s.id}')">Delete</button><button onclick="closeModal()">Cancel</button></div>`);
+   window._editingSection=s; return;
+ }
+ sectionDrawMode=true; sectionDrawStart=null;
+ const map=document.getElementById("map"); map.classList.add("draw-mode");
+ document.getElementById("mapStatus").innerHTML="<b>Draw Roof Section:</b> press and drag across the map to define its boundary.";
+}
+let sectionDrawMode=false,sectionDrawStart=null,sectionDrawingShape=null;
+function finishNewSection(shape){
+ sectionDrawMode=false;document.getElementById("map")?.classList.remove("draw-mode");document.getElementById("mapStatus").textContent="";
+ const s={id:uid(),label:"Section "+String.fromCharCode(65+state.sections.length),squares:0,projectType:state.project.projectType||"",assembly:"",materials:"",status:"Not Started",completedSquares:0,shape};
+ state.sections.push(s);save();renderMap();startAddSection(s);
 }
 function saveSection(id){let s=window._editingSection;s.label=document.getElementById("mLabel").value.trim()||"Unnamed Section";s.squares=+document.getElementById("mSquares").value||0;s.projectType=document.getElementById("mType").value;s.assembly=document.getElementById("mAssembly").value;s.materials=document.getElementById("mMaterials").value;s.status=document.getElementById("mStatus").value;if(!state.sections.some(x=>x.id===id))state.sections.push(s);save();closeModal();render()}
 function deleteSection(id){if(confirm("Delete this roof section and its mapped section boundary?")){state.sections=state.sections.filter(s=>s.id!==id);state.mapObjects=state.mapObjects.filter(o=>!(o.kind==="section"&&o.sectionId===id));save();closeModal();render()}}
 function editSection(id){startAddSection(state.sections.find(s=>s.id===id))}
 function editSectionShape(id){
  const s=state.sections.find(x=>x.id===id); if(!s)return;
- openModal("Resize / Crop Roof Section",`<div class="notice">Use the sliders to crop/resize the displayed section boundary. The entered roofing-square quantity remains independent.</div>
- <div class="grid grid2" style="margin-top:10px">
- <div><label>Left</label><input id="sx" type="range" min="2" max="75" value="${s.shape.x}" oninput="previewShape('${id}')"></div>
- <div><label>Top</label><input id="sy" type="range" min="2" max="65" value="${s.shape.y}" oninput="previewShape('${id}')"></div>
- <div><label>Width</label><input id="sw" type="range" min="5" max="85" value="${s.shape.w}" oninput="previewShape('${id}')"></div>
- <div><label>Height</label><input id="sh" type="range" min="5" max="70" value="${s.shape.h}" oninput="previewShape('${id}')"></div></div>
- <div class="row" style="margin-top:12px"><button class="primary" onclick="saveShape('${id}')">Save Shape</button><button onclick="closeModal()">Cancel</button></div>`);
- window._shapeBackup={...s.shape}; window._shapeId=id;
+ document.getElementById("mapStatus").innerHTML="<b>Resize:</b> drag the white corner handles on the selected roof section.";
+ selectSectionForTransform(id);
 }
-function previewShape(id){const s=state.sections.find(x=>x.id===id);if(!s)return;s.shape={x:+sx.value,y:+sy.value,w:+sw.value,h:+sh.value};renderMap()}
-function saveShape(id){save();closeModal();render()}
+function selectSectionForTransform(id){state.selectedSection=id;renderMap();}
+function previewShape(id){ }
+function saveShape(id){save();render();}
 function startAddCompleted(){
  openModal("Add Completed Area",`<div class="grid grid2"><div><label>Roof Section</label><select id="cSec">${state.sections.map(s=>`<option value="${s.id}">${esc(s.label)} — ${s.squares} squares</option>`).join("")}</select></div><div><label>Completion Date</label><input id="cDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label>Squares Completed</label><input id="cSq" type="number" step=".1" min="0"></div><div><label>Status</label><select id="cStatus"><option>Complete</option><option>Incomplete</option></select></div></div><div class="row" style="margin-top:12px"><button class="primary" onclick="saveCompleted()">Save</button><button onclick="closeModal()">Cancel</button></div>`);
 }
@@ -213,30 +228,37 @@ function editMapObject(id){const o=state.mapObjects.find(x=>x.id===id);if(!o)ret
 function saveMapEdit(id){const o=state.mapObjects.find(x=>x.id===id);if(o.kind==="point")o.size=+moSize.value;if(o.kind==="line")o.thickness=+moThick.value;save();closeModal();render()}
 function toggleLegend(){document.getElementById("legend").style.display=document.getElementById("legend").style.display==="none"?"block":"none"}
 
-let dragging=null;
-function mapPointer(e){
- const rect=document.getElementById("map").getBoundingClientRect();return{x:(e.clientX-rect.left)/rect.width*100,y:(e.clientY-rect.top)/rect.height*100}
-}
+let dragging=null,sectionTransform=null;
+function mapPointer(e){const rect=document.getElementById("map").getBoundingClientRect();return{x:(e.clientX-rect.left)/rect.width*100,y:(e.clientY-rect.top)/rect.height*100}}
 function bindMapDrag(){
- document.querySelectorAll(".map-marker,.map-line,.completed-area").forEach(el=>{
-   el.onpointerdown=e=>{e.stopPropagation();dragging={id:el.dataset.id,start:mapPointer(e)};el.setPointerCapture?.(e.pointerId)};
+ const map=document.getElementById("map");
+ document.querySelectorAll(".map-marker,.map-line,.completed-area").forEach(el=>{el.onpointerdown=e=>{e.stopPropagation();dragging={id:el.dataset.id,start:mapPointer(e)};el.setPointerCapture?.(e.pointerId)}});
+ document.querySelectorAll(".map-section").forEach(el=>{
+   el.onpointerdown=e=>{if(e.target.classList.contains("map-handle"))return;e.stopPropagation();const id=el.dataset.id;state.selectedSection=id;dragging={sectionId:id,start:mapPointer(e),shape:{...state.sections.find(x=>x.id===id).shape}};el.setPointerCapture?.(e.pointerId);renderMap()};
+   el.ondblclick=e=>{e.stopPropagation();editSection(el.dataset.id)};
  });
- document.getElementById("map").onpointermove=e=>{if(!dragging)return;const p=mapPointer(e),o=state.mapObjects.find(x=>x.id===dragging.id);if(!o)return;const dx=p.x-dragging.start.x,dy=p.y-dragging.start.y;o.x=Math.max(0,Math.min(100,o.x+dx));o.y=Math.max(0,Math.min(100,o.y+dy));if(o.kind==="line"){o.x2=Math.max(0,Math.min(100,o.x2+dx));o.y2=Math.max(0,Math.min(100,o.y2+dy))}dragging.start=p;renderMap()};
- document.getElementById("map").onpointerup=()=>{if(dragging){save();dragging=null;render()}};
+ document.querySelectorAll(".map-handle").forEach(h=>{h.onpointerdown=e=>{e.stopPropagation();const id=h.dataset.id,corner=h.dataset.corner,s=state.sections.find(x=>x.id===id);sectionTransform={id,corner,start:mapPointer(e),shape:{...s.shape}};h.setPointerCapture?.(e.pointerId)}});
+ map.onpointerdown=e=>{if(!sectionDrawMode){if(e.target===map){state.selectedSection=null;renderMap()}return;}sectionDrawStart=mapPointer(e);sectionDrawingShape={x:sectionDrawStart.x,y:sectionDrawStart.y,w:0,h:0};renderMap()};
+ map.onpointermove=e=>{
+   const p=mapPointer(e);
+   if(sectionDrawMode&&sectionDrawStart){const x=Math.min(sectionDrawStart.x,p.x),y=Math.min(sectionDrawStart.y,p.y),w=Math.abs(p.x-sectionDrawStart.x),h=Math.abs(p.y-sectionDrawStart.y);sectionDrawingShape={x,y,w,h};renderMap();return}
+   if(sectionTransform){const s=state.sections.find(x=>x.id===sectionTransform.id);if(!s)return;const dx=p.x-sectionTransform.start.x,dy=p.y-sectionTransform.start.y,sh=sectionTransform.shape,c=sectionTransform.corner;let x=sh.x,y=sh.y,w=sh.w,h=sh.h;if(c.includes("w")){x=sh.x+dx;w=sh.w-dx}if(c.includes("e")){w=sh.w+dx}if(c.includes("n")){y=sh.y+dy;h=sh.h-dy}if(c.includes("s")){h=sh.h+dy}s.shape={x:Math.max(0,Math.min(100-w,x)),y:Math.max(0,Math.min(100-h,y)),w:Math.max(3,Math.min(100,w)),h:Math.max(3,Math.min(100,h))};renderMap();return}
+   if(dragging){if(dragging.sectionId){const s=state.sections.find(x=>x.id===dragging.sectionId);if(s){const dx=p.x-dragging.start.x,dy=p.y-dragging.start.y;s.shape.x=Math.max(0,Math.min(100-s.shape.w,dragging.shape.x+dx));s.shape.y=Math.max(0,Math.min(100-s.shape.h,dragging.shape.y+dy));renderMap()}}else{const o=state.mapObjects.find(x=>x.id===dragging.id);if(!o)return;const dx=p.x-dragging.start.x,dy=p.y-dragging.start.y;o.x=Math.max(0,Math.min(100,o.x+dx));o.y=Math.max(0,Math.min(100,o.y+dy));if(o.kind==="line"){o.x2=Math.max(0,Math.min(100,o.x2+dx));o.y2=Math.max(0,Math.min(100,o.y2+dy))}dragging.start=p;renderMap()}}
+ };
+ map.onpointerup=e=>{if(sectionDrawMode&&sectionDrawStart){const sh=sectionDrawingShape;if(sh.w>2&&sh.h>2)finishNewSection(sh);else{sectionDrawStart=null;sectionDrawingShape=null;renderMap()}return}if(sectionTransform||dragging){save();sectionTransform=null;dragging=null;render();}};
 }
-function startMapShape(kind){}
-
-
+function toggleMapTools(){document.getElementById("mapToolbar")?.classList.toggle("collapsed")}
 function renderMap(){
  const bg=document.getElementById("mapBg");if(bg){bg.src=state.project.mapImage||"";bg.style.display=state.project.mapImage?"block":"none";}
  const layer=document.getElementById("mapObjects");layer.innerHTML="";
  state.sections.forEach(s=>{
    const sh=s.shape||{x:10,y:10,w:30,h:20};
-   const el=document.createElement("div");el.className="map-section";el.dataset.id=s.id;el.style.cssText=`left:${sh.x}%;top:${sh.y}%;width:${sh.w}%;height:${sh.h}%;`;
-   el.innerHTML=`<div class="tag">${esc(s.label)} • ${s.squares} sq</div>`;
+   const el=document.createElement("div");el.className="map-section"+(state.selectedSection===s.id?" selected":"");el.dataset.id=s.id;el.style.cssText=`left:${sh.x}%;top:${sh.y}%;width:${sh.w}%;height:${sh.h}%;`;
+   el.innerHTML=`<div class="tag">${esc(s.label)} • ${s.squares} sq</div><span class="map-handle nw" data-id="${s.id}" data-corner="nw"></span><span class="map-handle ne" data-id="${s.id}" data-corner="ne"></span><span class="map-handle sw" data-id="${s.id}" data-corner="sw"></span><span class="map-handle se" data-id="${s.id}" data-corner="se"></span>`;
    el.onclick=e=>{e.stopPropagation();openModal("Roof Section",`<div class="grid grid2"><div class="stat"><span>Project Type</span><b>${esc(s.projectType||"—")}</b></div><div class="stat"><span>Squares</span><b>${s.squares}</b></div><div><label>Assembly</label><div>${esc(s.assembly||"—")}</div></div><div><label>Materials</label><div>${esc(s.materials||"—")}</div></div></div><div class="row" style="margin-top:12px"><button class="primary" onclick="editSection('${s.id}')">Edit</button><button onclick="editSectionShape('${s.id}')">Edit Shape</button><button class="danger" onclick="deleteSection('${s.id}');closeModal()">Delete</button></div>`)};
    layer.appendChild(el);
  });
+ if(sectionDrawingShape){const d=document.createElement("div");d.className="map-section selected";d.style.cssText=`left:${sectionDrawingShape.x}%;top:${sectionDrawingShape.y}%;width:${sectionDrawingShape.w}%;height:${sectionDrawingShape.h}%;opacity:.65`;d.innerHTML="<div class=\"tag\">New Roof Section</div>";layer.appendChild(d)}
  state.mapObjects.forEach(o=>{
    if(state.selectedDay!=="all" && o.date && o.date!==state.selectedDay)return;
    if(o.kind==="completed"){
@@ -269,10 +291,10 @@ function renderAssembly(){document.getElementById("assemblyTable").innerHTML=sta
 function renderOperations(){document.getElementById("operationsTable").innerHTML=state.operations.length?`<table class="table"><tr><th>Operation</th><th>Unit</th><th>Rate</th><th>MH</th><th></th></tr>${state.operations.map(o=>`<tr><td>${esc(o.name)}</td><td>${o.unit}</td><td>${o.rate}</td><td>${o.manHours}</td><td><button class="small" onclick="editOperation('${o.id}')">Edit/Delete</button></td></tr>`).join("")}</table>`:`<div class="muted">No installation operations yet.</div>`}
 function renderDetails(){document.getElementById("detailsTable").innerHTML=state.details.length?`<table class="table"><tr><th>Detail</th><th>Qty</th><th>Unit</th><th>Man-Hours</th><th>Map Size</th><th></th></tr>${state.details.map(d=>`<tr><td>${esc(d.type)}</td><td>${d.qty}</td><td>${d.unit}</td><td>${d.manHours}</td><td>${d.unit==="LF"?"Thickness "+(d.thickness||4)+"px":(d.size||20)+"px"}</td><td><button class="small" onclick="editDetail('${d.id}')">Edit/Delete</button></td></tr>`).join("")}</table>`:`<div class="muted">No details yet.</div>`}
 function addEmployee(){state.employees.push({id:uid(),name:"New Employee",classification:"",skills:{}});save();render();editEmployee(state.employees.at(-1).id)}
-function editEmployee(id){const e=state.employees.find(x=>x.id===id);openModal("Employee",`<div><label>Name</label><input id="empName" value="${esc(e.name)}"></div><div style="margin-top:8px"><label>Classification</label><select id="empClass"><option value="">Select</option><option ${e.classification==="Foreman"?"selected":""}>Foreman</option><option ${e.classification==="Journeyman"?"selected":""}>Journeyman</option><option ${e.classification==="90% Apprentice"?"selected":""}>90% Apprentice</option><option ${e.classification==="80% Apprentice"?"selected":""}>80% Apprentice</option><option ${e.classification==="70% Apprentice"?"selected":""}>70% Apprentice</option><option ${e.classification==="60% Apprentice"?"selected":""}>60% Apprentice</option></select></div><div class="v431-checkall"><input id="checkAll" type="checkbox" onchange="checkAllSkills(this.checked)"> <b>Check All Capabilities</b></div><div>${capabilities.map(c=>`<div class="skill"><div class="skill-top"><label style="margin:0"><input type="checkbox" data-skill="${esc(c)}" ${e.skills[c]!=null?"checked":""} onchange="toggleSkill('${id}',${JSON.stringify(c)},this.checked)"> ${esc(c)}</label><input type="number" min="1" max="2" step=".05" value="${e.skills[c]??1}" ${e.skills[c]==null?"disabled":""} data-rating="${esc(c)}" onchange="setSkillRating('${id}',${JSON.stringify(c)},this.value)"><button class="small" onclick="this.previousElementSibling.stepUp();this.previousElementSibling.dispatchEvent(new Event('change'))">＋</button></div></div>`).join("")}</div><div class="row" style="margin-top:12px"><button class="primary" onclick="saveEmployee('${id}')">Save</button><button class="danger" onclick="deleteEmployee('${id}')">Delete</button></div>`)}
-function checkAllSkills(on){const e=state.employees.find(x=>document.querySelector("[onclick*='saveEmployee']")?.getAttribute("onclick")?.match(/'([^']+)'/)?.[1]);if(!e)return;const emp=state.employees.find(x=>x.id===e);capabilities.forEach(c=>{if(on&&emp.skills[c]==null)emp.skills[c]=1;if(!on)delete emp.skills[c]});save();editEmployee(e.id)}
+function editEmployee(id){const e=state.employees.find(x=>x.id===id);window._editingEmployee=id;openModal("Employee",`<div><label>Name</label><input id="empName" value="${esc(e.name)}"></div><div style="margin-top:8px"><label>Classification</label><select id="empClass"><option value="">Select</option><option ${e.classification==="Foreman"?"selected":""}>Foreman</option><option ${e.classification==="Journeyman"?"selected":""}>Journeyman</option><option ${e.classification==="90% Apprentice"?"selected":""}>90% Apprentice</option><option ${e.classification==="80% Apprentice"?"selected":""}>80% Apprentice</option><option ${e.classification==="70% Apprentice"?"selected":""}>70% Apprentice</option><option ${e.classification==="60% Apprentice"?"selected":""}>60% Apprentice</option></select></div><div class="v431-checkall"><input id="checkAll" type="checkbox" onchange="checkAllSkills(this.checked)"> <b>Check All Capabilities</b></div><div>${capabilities.map(c=>`<div class="skill"><div class="skill-top"><label style="margin:0"><input type="checkbox" data-skill="${esc(c)}" ${e.skills[c]!=null?"checked":""} onchange="toggleSkill('${id}',${JSON.stringify(c)},this.checked)"> ${esc(c)}</label><input type="number" min="1" max="2" step=".5" value="${e.skills[c]??1}" ${e.skills[c]==null?"disabled":""} data-rating="${esc(c)}" onchange="setSkillRating('${id}',${JSON.stringify(c)},this.value)"><button class="small" onclick="this.previousElementSibling.value=Math.min(2,+this.previousElementSibling.value+.5);this.previousElementSibling.dispatchEvent(new Event('change'))">＋</button></div></div>`).join("")}</div><div class="row" style="margin-top:12px"><button class="primary" onclick="saveEmployee('${id}')">Save</button><button class="danger" onclick="deleteEmployee('${id}')">Delete</button></div>`)}
+function checkAllSkills(on){const emp=state.employees.find(x=>x.id===window._editingEmployee);if(!emp)return;capabilities.forEach(c=>{if(on)emp.skills[c]=emp.skills[c]??1;else delete emp.skills[c]});save();editEmployee(emp.id)}
 function toggleSkill(id,c,on){const e=state.employees.find(x=>x.id===id);if(on)e.skills[c]=e.skills[c]??1;else delete e.skills[c];save();editEmployee(id)}
-function setSkillRating(id,c,v){const e=state.employees.find(x=>x.id===id);e.skills[c]=Math.max(1,Math.min(2,+v||1));save()}
+function setSkillRating(id,c,v){const e=state.employees.find(x=>x.id===id);e.skills[c]=[1,1.5,2].reduce((best,n)=>Math.abs(n-(+v||1))<Math.abs(best-(+v||1))?n:best,1);save()}
 function saveEmployee(id){const e=state.employees.find(x=>x.id===id);e.name=empName.value;e.classification=empClass.value;save();closeModal();render()}
 function deleteEmployee(id){if(confirm("Delete employee?")){state.employees=state.employees.filter(x=>x.id!==id);save();closeModal();render()}}
 function renderEmployees(){document.getElementById("employees").innerHTML=state.employees.length?`<table class="table"><tr><th>Employee</th><th>Classification</th><th>Capabilities</th><th></th></tr>${state.employees.map(e=>`<tr><td>${esc(e.name)}</td><td>${esc(e.classification||"—")}</td><td>${Object.entries(e.skills).map(([k,v])=>`${esc(k)} ${(+v).toFixed(2)}`).join(" • ")||"None"}</td><td><button class="small" onclick="editEmployee('${e.id}')">Edit</button></td></tr>`).join("")}</table>`:`<div class="muted">No employees yet.</div>`}
@@ -284,12 +306,13 @@ function recalcDaily(){state.sections.forEach(s=>s.completedSquares=state.daily.
 function renderDaily(){const dates=[...new Set(state.daily.map(d=>d.date))].sort();document.getElementById("daily").innerHTML=`<div class="timeline"><button class="${state.selectedDay==="all"?"active":""}" onclick="showDay('all')">All Days</button>${dates.map(d=>`<button class="${state.selectedDay===d?"active":""}" onclick="showDay('${d}')">${d}</button>`).join("")}</div>${state.daily.length?`<table class="table"><tr><th>Date</th><th>Section</th><th>Squares</th><th>MH</th><th>Details</th><th>Incomplete</th><th></th></tr>${state.daily.map(d=>`<tr><td>${d.date}</td><td>${esc(state.sections.find(s=>s.id===d.sectionId)?.label||"—")}</td><td>${d.squares}</td><td>${d.manHours}</td><td>${esc(d.detailsDone)}</td><td>${esc(d.incomplete)}</td><td><button class="small" onclick="editDaily('${d.id}')">Edit</button></td></tr>`).join("")}</table>`:`<div class="muted">No daily entries yet.</div>`}`}
 function renderForecast(){const sq=totalSquares(),done=completedTotal(),remaining=Math.max(0,sq-done),mh=state.daily.reduce((a,d)=>a+(+d.manHours||0),0),rate=state.daily.reduce((a,d)=>a+(+d.squares||0),0)/(new Set(state.daily.map(d=>d.date)).size||1);document.getElementById("forecast").innerHTML=`<div class="stat"><span>Total Squares</span><b>${sq.toFixed(1)}</b></div><div class="stat"><span>Completed</span><b>${done.toFixed(1)}</b></div><div class="stat"><span>Remaining</span><b>${remaining.toFixed(1)}</b></div><div class="stat"><span>Avg Squares / Workday</span><b>${rate.toFixed(1)}</b></div><div class="stat"><span>Actual Daily MH</span><b>${mh.toFixed(1)}</b></div><div class="stat"><span>Simple Forecast</span><b>${rate>0?Math.ceil(remaining/rate)+" workdays":"Need production data"}</b></div>`}
 function renderFinancials(){for(const [k,v] of Object.entries(state.financials)){const el=document.querySelector(`[data-money="${k}"]`);if(el){el.value=v;el.oninput=()=>{state.financials[k]=+el.value||0;save();renderFinancials()}}}const revenue=+state.financials.contractValue||0,cost=(+state.financials.estimatedLaborCost||0)+(+state.financials.materialCost||0)+(+state.financials.otherCost||0);document.getElementById("profit").textContent=money(revenue-cost);document.getElementById("margin").textContent=(revenue?((revenue-cost)/revenue*100):0).toFixed(1)+"%"}
-function scrollToId(id){document.getElementById(id)?.scrollIntoView({behavior:"smooth",block:"start"})}
+function showTab(id){document.querySelectorAll(".view-section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".topnav button[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));window.scrollTo({top:0,behavior:"smooth"})}
+function scrollToId(id){showTab(id)}
 function uploadMap(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{state.project.mapImage=r.result;save();renderMap();renderDashboard()};r.readAsDataURL(f)}
 function removeMap(){if(!state.project.mapImage)return;if(confirm("Remove the current roof drawing / overhead image?")){state.project.mapImage="";save();renderMap();renderDashboard()}}
 function renderDashboard(){const sq=totalSquares(),done=completedTotal(),remaining=Math.max(0,sq-done),days=new Set(state.daily.map(d=>d.date)).size,rate=days?state.daily.reduce((a,d)=>a+(+d.squares||0),0)/days:0;const finish=rate?Math.ceil(remaining/rate):null;document.getElementById("dashboard").innerHTML=`<div class="between"><div><h2>Dashboard</h2></div><div class="row"><button class="primary" onclick="scrollToId('roofing')">Open Roofing</button><button onclick="scrollToId('employeesSection')">Employees</button></div></div><div class="grid grid3" style="margin-top:10px"><div class="stat"><span>Project Roofing Squares</span><b>${sq.toFixed(1)}</b></div><div class="stat"><span>Completed</span><b>${done.toFixed(1)}</b></div><div class="stat"><span>Remaining</span><b>${remaining.toFixed(1)}</b></div><div class="stat"><span>Employees</span><b>${state.employees.length}</b></div><div class="stat"><span>Daily Production Rate</span><b>${rate.toFixed(1)} sq/day</b></div><div class="stat"><span>Forecast</span><b>${finish!==null?finish+" workdays":"Need daily data"}</b></div></div><div class="notice" style="margin-top:10px">The dashboard summarizes production and workforce information. Financials remain at the bottom of the project.</div>`}
 function render(){renderDashboard();document.getElementById("projectName").value=state.project.name||"";document.getElementById("customer").value=state.project.customer||"";document.getElementById("location").value=state.project.location||"";document.getElementById("totalSquares").value=state.project.totalSquares||"";document.getElementById("projectType").value=state.project.projectType||"";document.getElementById("globalSize").value=state.project.globalDetailSize||20;renderMap();renderLegend();renderSections();renderAssembly();renderOperations();renderDetails();renderEmployees();renderDaily();renderForecast();renderFinancials()}
-function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="commercial-roofing-manager-v4.3.2-project.json";a.click();URL.revokeObjectURL(a.href)}
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="commercial-roofing-manager-v4.3.3-project.json";a.click();URL.revokeObjectURL(a.href)}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{state=JSON.parse(r.result);save();render()}catch{alert("Invalid project file.")}};r.readAsText(f)}
 render();
 </script>
