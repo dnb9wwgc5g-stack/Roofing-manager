@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b2945"><title>Commercial Roofing Manager — V4.3</title>
+<meta name="theme-color" content="#0b2945"><title>Commercial Roofing Manager — V4.3.1</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17212b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#0b2945;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center}
@@ -18,7 +18,7 @@ nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid 
 .op{background:#f7fafc;border:1px solid #dce4ea;border-radius:10px;padding:10px;margin-top:8px}.skillGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.skillGrid label{font-weight:500;margin:0}.skillGrid input{width:auto}.badge{display:inline-block;padding:3px 7px;border-radius:99px;background:#e8f1f9;color:#1769aa;font-size:11px;margin:2px}
 @media(max-width:700px){.two,.three{grid-template-columns:1fr}.skillGrid{grid-template-columns:1fr}#map{height:320px}}
 </style></head><body>
-<header><div><b>Commercial Roofing Manager</b><div class="whiteSmall">V4.3 • GitHub Pages • Roofing squares are primary</div></div><div id="saved" class="whiteSmall">Ready</div></header>
+<header><div><b>Commercial Roofing Manager</b><div class="whiteSmall">V4.3.1 • GitHub Pages • Roofing squares are primary</div></div><div id="saved" class="whiteSmall">Ready</div></header>
 <main><section id="dash"></section><section id="projects" class="hidden"></section><section id="project" class="hidden"></section><section id="crew" class="hidden"></section></main>
 <nav><button data-p="dash">Dashboard</button><button data-p="projects">Projects</button><button data-p="crew">Crew</button></nav>
 <script>
@@ -138,6 +138,25 @@ nav("dash");
     const total=p.roofSections.reduce((a,s)=>a+(+s.squares||0),0);
     const done=p.roofSections.reduce((a,s)=>a+(+s.completedSquares||0),0);
     return `<div class="card"><div class="between"><div><h3>Interactive Overhead</h3><div class="muted">Roof sections, daily production, and detail history.</div></div><div class="row"><button onclick="v43AddRoofSection()">+ Add Roof Section</button><button onclick="v43AddDailyEntry()">+ Daily Entry</button><button class="primary" onclick="v43OpenFullMap()">⛶ Full Screen Map</button></div></div><div class="v43-map-shell" id="v43MapShell" style="margin-top:12px"><div class="v43-map-canvas"><div class="v43-map-toolbar"><button onclick="v43CloseFullMap()">↩ Exit Full Screen</button><button onclick="v43FitProject()">Fit Project</button><button onclick="v43Zoom(-.2)">−</button><button onclick="v43Zoom(.2)">+</button></div><div class="v43-map-status"><b>${done.toFixed(1)} / ${total.toFixed(1)} squares</b> completed</div><div class="v43-map-legend"><b>Map Legend</b><div class="muted" style="margin-top:6px">Job details become available here for placement.</div></div></div></div><div style="margin-top:12px"><b>Daily History</b><div class="v43-day-strip">${(p.dailyEntries||[]).map((d,i)=>`<button onclick="v43SelectDay(${i})">${esc(d.date||"Date")}</button>`).join("")||'<span class="muted">No daily entries yet.</span>'}</div></div></div>`;
+  };
+})();
+</script>
+
+
+<style>
+.v431-checkall{display:flex;align-items:center;gap:8px;margin:8px 0;padding:8px 10px;border:1px solid #d6dce2;border-radius:10px;background:#f7f9fb}
+</style>
+<script>
+(function(){
+  window.v431CheckAllCapabilities=function(root, checked){
+    const scope=root||document;
+    scope.querySelectorAll('input[data-capability]').forEach(cb=>{
+      cb.checked=checked;
+      cb.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+  };
+  window.v431NormalizeDetailLabels=function(text){
+    return String(text||"").replace(/\bDetail Completion\b/gi,"Detail");
   };
 })();
 </script>
